@@ -16,6 +16,8 @@ import TradeIn from "./pages/TradeIn";
 import SellYourCar from "./pages/SellYourCar";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminInventory from "./pages/admin/Inventory";
@@ -23,6 +25,7 @@ import AdminLeads from "./pages/admin/Leads";
 import AdminTestimonials from "./pages/admin/Testimonials";
 import AdminBlog from "./pages/admin/Blog";
 import AdminSettings from "./pages/admin/Settings";
+import AdminUsers from "./pages/admin/Users";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,8 @@ const App = () => (
             <Route path="/trade-in" element={<TradeIn />} />
             <Route path="/sell-your-car" element={<SellYourCar />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute requireStaff><AdminDashboard /></ProtectedRoute>} />
@@ -51,6 +56,7 @@ const App = () => (
             <Route path="/admin/testimonials" element={<ProtectedRoute requireStaff><AdminTestimonials /></ProtectedRoute>} />
             <Route path="/admin/blog" element={<ProtectedRoute requireStaff><AdminBlog /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute requireAdmin><AdminUsers /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

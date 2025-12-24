@@ -67,6 +67,10 @@ export default function AdminLeads() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchLeads();
+  }, [statusFilter]);
   const updateLeadStatus = async (leadId: string, newStatus: LeadStatus) => {
     try {
       const { error } = await supabase
@@ -125,6 +129,7 @@ export default function AdminLeads() {
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value as StatusFilter)}
           >
+            <SelectTrigger className="w-40">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
