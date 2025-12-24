@@ -26,10 +26,11 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
+type StatusFilter = "all" | LeadStatus;
 
-const statusColors: Record<string, string> = {
-  new: "bg-green-500/10 text-green-500 border-green-500/20",
-  contacted: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+const statusColors: Record<LeadStatus, string> = {
+  new: "bg-accent/10 text-accent border-accent/20",
+  contacted: "bg-primary/10 text-primary border-primary/20",
   closed: "bg-muted text-muted-foreground border-border",
 };
 
@@ -37,7 +38,7 @@ export default function AdminLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -66,22 +67,17 @@ export default function AdminLeads() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchLeads();
-  }, [statusFilter]);
-
-  const updateLeadStatus = async (leadId: string, newStatus: string) => {
+  const updateLeadStatus = async (leadId: string, newStatus: LeadStatus) => {
     try {
       const { error } = await supabase
         .from("leads")
-        .update({ status: newStatus as LeadStatus })
+        .update({ status: newStatus })
         .eq("id", leadId);
 
       if (error) throw error;
 
-      setLeads(leads.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus as LeadStatus } : lead
+      setLeads(leads.map((lead) =>
+        lead.id === leadId ? { ...lead, status: newStatus } : lead
       ));
 
       toast({
@@ -125,8 +121,10 @@ export default function AdminLeads() {
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          >
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -202,10 +200,7 @@ export default function AdminLeads() {
                         <SelectContent>
                           <SelectItem value="new">New</SelectItem>
                           <SelectItem value="contacted">Contacted</SelectItem>
-                          <SelectItem value="qualified">Qualified</SelectItem>
-                          <SelectItem value="negotiating">Negotiating</SelectItem>
-                          <SelectItem value="closed_won">Closed (Won)</SelectItem>
-                          <SelectItem value="closed_lost">Closed (Lost)</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

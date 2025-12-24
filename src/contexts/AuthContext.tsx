@@ -23,49 +23,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isStaff, setIsStaff] = useState(false);
 
   const checkUserRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    
-    if (data) {
-      setIsAdmin(data.some(r => r.role === "admin"));
-      setIsStaff(data.some(r => r.role === "admin" || r.role === "staff"));
+    try {
+      const [adminRes, staffRes] = await Promise.all([
+        supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+        supabase.rpc("is_admin_or_staff", { _user_id: userId }),
+      ]);
+
+      if (adminRes.error) throw adminRes.error;
+      if (staffRes.error) throw staffRes.error;
+
+      setIsAdmin(Boolean(adminRes.data));
+      setIsStaff(Boolean(staffRes.data));
+    } catch (err) {
+      console.error("Error checking user roles:", err);
+      setIsAdmin(false);
+      setIsStaff(false);
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    let mounted = true;
 
-        // Defer role check to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            checkUserRole(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-          setIsStaff(false);
-        }
+    const applySession = async (nextSession: Session | null) => {
+      if (!mounted) return;
+      setLoading(true);
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (nextSession?.user) {
+        await checkUserRole(nextSession.user.id);
+      } else {
+        setIsAdmin(false);
+        setIsStaff(false);
       }
-    );
+
+      if (mounted) setLoading(false);
+    };
+
+    // Set up auth state listener FIRST
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void applySession(nextSession);
+    });
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      if (session?.user) {
-        checkUserRole(session.user.id);
-      }
+      void applySession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
