@@ -23,6 +23,7 @@ const sidebarLinks = [
   { name: "Leads", href: "/admin/leads", icon: MessageSquare },
   { name: "Testimonials", href: "/admin/testimonials", icon: Star },
   { name: "Blog Posts", href: "/admin/blog", icon: FileText },
+  { name: "Users", href: "/admin/users", icon: Users },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

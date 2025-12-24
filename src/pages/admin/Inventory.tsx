@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Eye, EyeOff, Upload, X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
@@ -57,6 +57,7 @@ export default function AdminInventory() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<Partial<Car> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -454,12 +455,85 @@ export default function AdminInventory() {
               />
             </div>
             <div className="col-span-2">
-              <Label>Main Image URL</Label>
-              <Input
-                value={editingCar?.main_image || ""}
-                onChange={(e) => setEditingCar({ ...editingCar, main_image: e.target.value })}
-                placeholder="https://..."
-              />
+              <Label>Main Image</Label>
+              <div className="flex gap-2 items-start">
+                {editingCar?.main_image && (
+                  <div className="relative">
+                    <img
+                      src={editingCar.main_image}
+                      alt="Car preview"
+                      className="w-24 h-16 object-cover rounded border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditingCar({ ...editingCar, main_image: null })}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="car-image-upload"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      setUploadingImage(true);
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                        const filePath = `cars/${fileName}`;
+                        
+                        const { error: uploadError } = await supabase.storage
+                          .from('car-images')
+                          .upload(filePath, file);
+                        
+                        if (uploadError) throw uploadError;
+                        
+                        const { data: { publicUrl } } = supabase.storage
+                          .from('car-images')
+                          .getPublicUrl(filePath);
+                        
+                        setEditingCar({ ...editingCar, main_image: publicUrl });
+                        toast({ title: "Image uploaded successfully" });
+                      } catch (error: any) {
+                        console.error("Error uploading image:", error);
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to upload image",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={uploadingImage}
+                    onClick={() => document.getElementById('car-image-upload')?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploadingImage ? "Uploading..." : "Upload Image"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Or paste image URL below
+                  </p>
+                  <Input
+                    value={editingCar?.main_image || ""}
+                    onChange={(e) => setEditingCar({ ...editingCar, main_image: e.target.value })}
+                    placeholder="https://..."
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </div>
             <div className="col-span-2">
               <Label>Description</Label>
