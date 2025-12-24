@@ -81,6 +81,7 @@ export default {
       },
       boxShadow: {
         gold: "var(--shadow-gold)",
+        "gold-hover": "0 15px 50px -10px hsl(38 92% 50% / 0.4)",
         card: "var(--shadow-card)",
       },
       backgroundImage: {
